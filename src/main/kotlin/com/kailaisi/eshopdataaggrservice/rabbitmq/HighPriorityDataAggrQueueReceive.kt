@@ -52,29 +52,37 @@ class HighPriorityDataAggrQueueReceive {
             }
             jedis.set("dim_product_${bean.id}", JSONObject.toJSONString(productObject))
         }
+        jedis.close()
     }
 
     /**
      * 商品介绍
      */
     private fun processProductDescDimDataChange(bean: AggrDataChange) {
-        val info = jedisPool.resource.get("product_desc_${bean.id}")
+        var resource = jedisPool.resource
+        val info = resource.get("product_desc_${bean.id}")
         if (info.isNullOrEmpty()) {
-            jedisPool.resource.del("dim_product_desc_${bean.id}")
+            resource.del("dim_product_desc_${bean.id}")
         } else {
-            jedisPool.resource.set("dim_product_desc_${bean.id}", info)
+            resource.set("dim_product_desc_${bean.id}", info)
         }
+        resource.close()
     }
 
     /**
      * 分类数据
      */
     private fun processCategoryDimDataChange(bean: AggrDataChange) {
-        val info = jedisPool.resource.get("category_${bean.id}")
-        if (info.isNullOrEmpty()) {
-            jedisPool.resource.del("dim_category_${bean.id}")
-        } else {
-            jedisPool.resource.set("dim_category_${bean.id}", info)
+        var jedis = jedisPool.resource
+        try {
+            val info = jedis.get("category_${bean.id}")
+            if (info.isNullOrEmpty()) {
+                jedis.del("dim_category_${bean.id}")
+            } else {
+                jedis.set("dim_category_${bean.id}", info)
+            }
+        } finally {
+            jedis.close()
         }
     }
 
@@ -82,12 +90,13 @@ class HighPriorityDataAggrQueueReceive {
      * 品牌数据聚合，此处主要由于是业务简化了。实际是需要根据不同的数据来源，来组合成不同的数据。
      */
     private fun processBrandDimDataChange(bean: AggrDataChange) {
-        val info = jedisPool.resource.get("brand_${bean.id}")
+        var resource = jedisPool.resource
+        val info = resource.get("brand_${bean.id}")
         if (info.isNullOrEmpty()) {
-            jedisPool.resource.del("dim_brand_${bean.id}")
+            resource.del("dim_brand_${bean.id}")
         } else {
-            jedisPool.resource.set("dim_brand_${bean.id}", info)
-            println(jedisPool.resource.get("dim_brand_${bean.id}"))
+            resource.set("dim_brand_${bean.id}", info)
         }
+        resource.close()
     }
 }

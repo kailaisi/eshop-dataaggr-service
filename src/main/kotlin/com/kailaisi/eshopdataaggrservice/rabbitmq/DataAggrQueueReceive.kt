@@ -6,6 +6,7 @@ import org.springframework.amqp.rabbit.annotation.RabbitHandler
 import org.springframework.amqp.rabbit.annotation.RabbitListener
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+import redis.clients.jedis.Jedis
 import redis.clients.jedis.JedisPool
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -52,6 +53,7 @@ class DataAggrQueueReceive {
             }
             jedis.set("dim_product_${bean.id}", JSONObject.toJSONString(productObject))
         }
+        jedis.close()
     }
 
     /**
@@ -70,24 +72,27 @@ class DataAggrQueueReceive {
      * 分类数据
      */
     private fun processCategoryDimDataChange(bean: AggrDataChange) {
-        val info = jedisPool.resource.get("category_${bean.id}")
+        var resource = jedisPool.resource
+        val info = resource.get("category_${bean.id}")
         if (info.isNullOrEmpty()) {
-            jedisPool.resource.del("dim_category_${bean.id}")
+            resource.del("dim_category_${bean.id}")
         } else {
-            jedisPool.resource.set("dim_category_${bean.id}", info)
+            resource.set("dim_category_${bean.id}", info)
         }
+        resource.close()
     }
 
     /**
      * 品牌数据聚合，此处主要由于是业务简化了。实际是需要根据不同的数据来源，来组合成不同的数据。
      */
     private fun processBrandDimDataChange(bean: AggrDataChange) {
-        val info = jedisPool.resource.get("brand_${bean.id}")
+        var resource = jedisPool.resource
+        val info = resource.get("brand_${bean.id}")
         if (info.isNullOrEmpty()) {
-            jedisPool.resource.del("dim_brand_${bean.id}")
+            resource.del("dim_brand_${bean.id}")
         } else {
-            jedisPool.resource.set("dim_brand_${bean.id}", info)
-            println(jedisPool.resource.get("dim_brand_${bean.id}"))
+            resource.set("dim_brand_${bean.id}", info)
         }
+        resource.close()
     }
 }
